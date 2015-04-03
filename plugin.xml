@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.commands">
+      <category
+            name="Sus"
+            id="SusPlugin.commands.category">
+      </category>
+      <command
+            name="Run Sus"
+            categoryId="SusPlugin.commands.category"
+            id="SusPlugin.commands.sampleCommand">
+      </command>
+   </extension>
+   <extension
+         point="org.eclipse.ui.handlers">
+      <handler
+            commandId="SusPlugin.commands.sampleCommand"
+            class="susplugin.handlers.SampleHandler">
+      </handler>
+   </extension>
+   <extension
+         point="org.eclipse.ui.bindings">
+      <key
+            commandId="SusPlugin.commands.sampleCommand"
+            contextId="org.eclipse.ui.contexts.window"
+            sequence="M1+6"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
+      </key>
+   </extension>
+   <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            locationURI="menu:org.eclipse.ui.main.menu?after=additions">
+         <menu
+               label="Sus"
+               mnemonic="M"
+               id="SusPlugin.menus.sampleMenu">
+            <command
+                  commandId="SusPlugin.commands.sampleCommand"
+                  mnemonic="S"
+                  id="SusPlugin.menus.sampleCommand">
+            </command>
+         </menu>
+      </menuContribution>
+      <menuContribution
+            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+         <toolbar
+               id="SusPlugin.toolbars.sampleToolbar">
+            <command
+                  commandId="SusPlugin.commands.sampleCommand"
+                  icon="icons/sample.gif"
+                  tooltip="Say hello world"
+                  id="SusPlugin.toolbars.sampleCommand">
+            </command>
+         </toolbar>
+      </menuContribution>
+   </extension>
+
+</plugin>
