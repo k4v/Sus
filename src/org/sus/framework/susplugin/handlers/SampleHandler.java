@@ -1,4 +1,4 @@
-package susplugin.handlers;
+package org.sus.framework.susplugin.handlers;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
