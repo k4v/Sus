@@ -25,6 +25,8 @@ import soot.toolkits.graph.LoopNestTree;
 
 public class BodyAnalysis extends BodyTransformer
 {
+	private static BodyAnalysis bodyAnalysis = null;
+	
 	// Loop-depth of current statement
 	private int loopLevel = 0;
 	
@@ -36,12 +38,15 @@ public class BodyAnalysis extends BodyTransformer
 	// Also stores the statement and whether run() was called within a loop
 	Set<ThreadProperties> startedRunnables = new HashSet<ThreadProperties>();
 	
-	public static BodyAnalysis initAnalysis()
+	protected static BodyAnalysis initAnalysis()
 	{
-		BodyAnalysis susBodyAnalysis = new BodyAnalysis();
-		PackManager.v().getPack("jtp").add(new Transform("jtp.TestSoot", susBodyAnalysis));
+		if(bodyAnalysis == null)
+		{
+			bodyAnalysis = new BodyAnalysis();
+			PackManager.v().getPack("jtp").add(new Transform("jtp.TestSoot", bodyAnalysis));
+		}
 		
-		return susBodyAnalysis;
+		return bodyAnalysis;
 	}
 	
 	@Override
@@ -85,6 +90,7 @@ public class BodyAnalysis extends BodyTransformer
 	    		if(runnableType != null)
 	    		{
 	    			startedRunnables.add(new ThreadProperties(runnableType, sootStmt, (loopLevel > 0)));
+	    			System.out.println("Saving runnable value "+startedRunnable+" at "+sootStmt);
 	    		}
 	    	}
 	    }

@@ -40,6 +40,12 @@ public class HelloThread
 		public void simplyFunction(int a)
 		{
 			System.out.println("Here at "+a);
+			anotherFunction(a);
+		}
+		
+		public void anotherFunction(int a)
+		{
+			System.out.println("Here also at "+a);
 		}
 	}
 	

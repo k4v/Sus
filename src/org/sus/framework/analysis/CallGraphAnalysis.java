@@ -26,21 +26,27 @@ import soot.options.Options;
 
 public class CallGraphAnalysis extends SceneTransformer
 {
+	private static CallGraphAnalysis callGraphAnalysis = null;
+	
 	private CallGraph callGraph = null;
 
-	public static CallGraphAnalysis initAnalysis()
+	protected static CallGraphAnalysis initAnalysis()
 	{
-		//add an intra-procedural analysis phase to Soot
-	    CallGraphAnalysis callGraphAnalysis = new CallGraphAnalysis();
-	    PackManager.v().getPack("wjtp").add(new Transform("wjtp.TestSootCallGraph", callGraphAnalysis));
-
-	    //Perform analysis for the whole program
-	    Options.v().set_whole_program(true);
-	    
-	    excludeJDKLibrary();
-
-        //Enable the Spark (PTA) call graph
-	    enableSparkCallGraph();
+		// Add an intra-procedural analysis phase to Soot
+	    if(callGraphAnalysis == null)
+	    {
+	    	CallGraphAnalysis callGraphAnalysis = new CallGraphAnalysis();
+	    	
+		    PackManager.v().getPack("wjtp").add(new Transform("wjtp.TestSootCallGraph", callGraphAnalysis));
+	
+		    //Perform analysis for the whole program
+		    Options.v().set_whole_program(true);
+		    
+		    excludeJDKLibrary();
+	
+	        //Enable the Spark (PTA) call graph
+		    enableSparkCallGraph();
+	    }
 	    
 	    return callGraphAnalysis;
 	}
@@ -69,7 +75,7 @@ public class CallGraphAnalysis extends SceneTransformer
 		System.out.println("Proceeding with call graph generation");
 	}
 	
-	public void getIntersectingMethods(Set<ThreadProperties> startedRunnables)
+	protected void getIntersectingMethods(Set<ThreadProperties> startedRunnables)
 	{
 		if(this.callGraph == null)
 		{
@@ -83,6 +89,12 @@ public class CallGraphAnalysis extends SceneTransformer
 			
 			for(SootMethod sootMethod : runnableClass.getMethods())
 			{
+				// Only consider run() methods
+				if(!sootMethod.getDeclaration().equals("public void run()"))
+				{
+					continue;
+				}
+				
 				// Get directly reachable and transitive targets from this function
 				ReachableMethods directTargets = new ReachableMethods(this.callGraph, new Targets(callGraph.edgesOutOf(sootMethod)));
 				TransitiveTargets transitiveTargets = new TransitiveTargets(this.callGraph);

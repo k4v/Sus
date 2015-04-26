@@ -38,8 +38,13 @@ public class AnalysisLoader
 	    
 	    // Now we have all Thread/Runnable classes for which .start() is called.
 	    // Now we run call graph analysis on them
-	    Set<ThreadProperties> startedRunnableTypes = susBodyAnalysis.startedRunnables;
-	    susCallGraphAnalysis.getIntersectingMethods(startedRunnableTypes);
+	    Set<ThreadProperties> startedRunnables = susBodyAnalysis.startedRunnables;
+	    susCallGraphAnalysis.getIntersectingMethods(startedRunnables);
+	    
+	    // Now we have all methods reachable from known Runnable.run() methods.
+	    // Now do thread escape and alias analysis. These are inter-procedural. 
+	    AliasAnalysis susAliasAnalysis = AliasAnalysis.initAnalysis();
+	    susAliasAnalysis.getVariableAnalysis(startedRunnables);
 	    
 	    System.out.println("It's all over!");
 	}
