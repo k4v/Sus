@@ -35,7 +35,7 @@ public class CallGraphAnalysis extends SceneTransformer
 		// Add an intra-procedural analysis phase to Soot
 	    if(callGraphAnalysis == null)
 	    {
-	    	CallGraphAnalysis callGraphAnalysis = new CallGraphAnalysis();
+	    	callGraphAnalysis = new CallGraphAnalysis();
 	    	
 		    PackManager.v().getPack("wjtp").add(new Transform("wjtp.TestSootCallGraph", callGraphAnalysis));
 	
@@ -54,9 +54,9 @@ public class CallGraphAnalysis extends SceneTransformer
 	private static void enableSparkCallGraph()
 	{
 		//Enable Spark
-		HashMap<String,String> opt = new HashMap<String,String>();
-		opt.put("on-fly-cg","true");
-	    SparkTransformer.v().transform("",opt);
+		HashMap<String,String> sparkOptions = new HashMap<String,String>();
+		sparkOptions.put("on-fly-cg"     , "true");
+	    SparkTransformer.v().transform("",sparkOptions);
 	    PhaseOptions.v().setPhaseOption("cg.spark", "enabled:true");
 	}
 	
@@ -72,28 +72,31 @@ public class CallGraphAnalysis extends SceneTransformer
 	@Override
 	protected void internalTransform(String phaseName, Map<String, String> options)
 	{
-		System.out.println("Proceeding with call graph generation");
 	}
 	
-	protected void getIntersectingMethods(Set<ThreadProperties> startedRunnables)
+	protected void getReachableMethodsFromThreads(Set<ThreadProperties> startedRunnables)
 	{
 		if(this.callGraph == null)
 		{
 			this.callGraph = Scene.v().getCallGraph();
 		}
 		
+		// Get reachable methods for all threads
 		for(ThreadProperties threadProperties : startedRunnables)
 		{
 			Type classType = threadProperties.getRunnableType();
 			SootClass runnableClass = Scene.v().loadClassAndSupport(classType.toString());
-			
 			for(SootMethod sootMethod : runnableClass.getMethods())
 			{
 				// Only consider run() methods
-				if(!sootMethod.getDeclaration().equals("public void run()"))
+				if(!
+						(sootMethod.getDeclaration().equals("public void run()") ||
+						 sootMethod.getDeclaration().equals("public static void main(java.lang.String[])")))
 				{
 					continue;
 				}
+				
+				threadProperties.setRunMethod(sootMethod);
 				
 				// Get directly reachable and transitive targets from this function
 				ReachableMethods directTargets = new ReachableMethods(this.callGraph, new Targets(callGraph.edgesOutOf(sootMethod)));
@@ -122,5 +125,17 @@ public class CallGraphAnalysis extends SceneTransformer
 				}
 			}
 		}
+	}
+	
+	protected void addMainClassToRunnables(String mainClassName, Set<ThreadProperties> startedRunnables)
+	{
+		if(this.callGraph == null)
+		{
+			this.callGraph = Scene.v().getCallGraph();
+		}
+		
+		SootClass mainClass = Scene.v().loadClassAndSupport(mainClassName);
+		ThreadProperties mainProperties = new ThreadProperties(null, mainClass.getType(), null, false);
+		startedRunnables.add(mainProperties);
 	}
 }

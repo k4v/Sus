@@ -1,23 +1,34 @@
 package org.sus.framework.analysis;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.sus.framework.util.SusHelper;
+import org.sus.framework.util.VariableAccess;
 
 import soot.Body;
 import soot.BodyTransformer;
 import soot.PackManager;
+import soot.SootField;
+import soot.SootMethod;
 import soot.Transform;
 import soot.Type;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.DefinitionStmt;
+import soot.jimple.EnterMonitorStmt;
+import soot.jimple.ExitMonitorStmt;
+import soot.jimple.FieldRef;
+import soot.jimple.InstanceFieldRef;
 import soot.jimple.InvokeStmt;
+import soot.jimple.NullConstant;
 import soot.jimple.SpecialInvokeExpr;
+import soot.jimple.StaticFieldRef;
 import soot.jimple.Stmt;
 import soot.jimple.VirtualInvokeExpr;
 import soot.jimple.toolkits.annotation.logic.Loop;
@@ -37,6 +48,10 @@ public class BodyAnalysis extends BodyTransformer
 	// Runnable types on which .run() is actually called.
 	// Also stores the statement and whether run() was called within a loop
 	Set<ThreadProperties> startedRunnables = new HashSet<ThreadProperties>();
+	Map<String, Set<VariableAccess>> variableAccesses = new HashMap<String, Set<VariableAccess>>();
+	
+	private List<Value> lockStack = new ArrayList<Value>();
+	boolean expSecondExitMonitor = false;
 	
 	protected static BodyAnalysis initAnalysis()
 	{
@@ -56,7 +71,7 @@ public class BodyAnalysis extends BodyTransformer
 		Set<Stmt> loopEntryStmts = new HashSet<Stmt>();
 		Set<Stmt> loopExitStmts = new HashSet<Stmt>();
 		LoopNestTree loopNestTree = new LoopNestTree(methodBody);
-        for (Loop loop : loopNestTree)
+		for (Loop loop : loopNestTree)
         {
             loopEntryStmts.add(loop.getHead());
         	loopExitStmts.addAll(loop.targetsOfLoopExit((Stmt)(loop.getLoopExits().toArray()[0])));
@@ -79,6 +94,9 @@ public class BodyAnalysis extends BodyTransformer
 	    		loopLevel++;
 	    	}
 	    	
+	    	checkAccessStmt(sootStmt, methodBody.getMethod());
+	    	checkSynchronizationStmt(sootStmt);
+	    	
 	    	// If a new thread variable has been created, save the variable and wait for it's .start() method
 	    	checkThreadCreationStmt(sootStmt);
 	    	// Check if thread.start() was called. If so, save the type 
@@ -89,8 +107,8 @@ public class BodyAnalysis extends BodyTransformer
 	    		Type runnableType = innerRunnable.get(startedRunnable);
 	    		if(runnableType != null)
 	    		{
-	    			startedRunnables.add(new ThreadProperties(runnableType, sootStmt, (loopLevel > 0)));
-	    			System.out.println("Saving runnable value "+startedRunnable+" at "+sootStmt);
+	    			startedRunnables.add(new ThreadProperties(startedRunnable, runnableType, sootStmt, (loopLevel > 0)));
+	    			//System.out.println("Saving runnable value "+startedRunnable+" at "+sootStmt);
 	    		}
 	    	}
 	    }
@@ -206,5 +224,50 @@ public class BodyAnalysis extends BodyTransformer
     		}
     	}
     	return null;
+	}
+	
+	private void checkAccessStmt(Stmt sootStmt, SootMethod currentMethod)
+	{
+		if(sootStmt.containsFieldRef())
+		{
+			SootField accessField = sootStmt.getFieldRef().getField();
+    		boolean isWrite = (((DefinitionStmt)sootStmt).getLeftOp() instanceof FieldRef);
+    		boolean isStatic = (sootStmt.getFieldRef() instanceof StaticFieldRef);
+    		Value object = isStatic ? NullConstant.v() : ((InstanceFieldRef)sootStmt.getFieldRef()).getBase();
+    		
+    		String methodSig = currentMethod.getSignature();
+    		
+    		List<Value> currentLocks = new ArrayList<Value>(lockStack);
+    		
+    		System.out.println(isWrite+" access on "+isStatic+" field "+accessField+" of "+object+" in "+methodSig+" with "+currentLocks.size()+" locks");
+    		
+    		if(!variableAccesses.containsKey(methodSig))
+    		{
+    			variableAccesses.put(methodSig, new HashSet<VariableAccess>());
+    		}
+    		variableAccesses.get(currentMethod.getSignature()).add(
+    				new VariableAccess(accessField, sootStmt, currentMethod, isWrite, isStatic, currentLocks));
+		}
+	}
+	
+	private void checkSynchronizationStmt(Stmt sootStmt)
+	{
+		if(sootStmt instanceof EnterMonitorStmt)
+		{
+			EnterMonitorStmt enterMonitorStmt = (EnterMonitorStmt)sootStmt;
+			lockStack.add(0, enterMonitorStmt.getOp());
+			expSecondExitMonitor = false;
+		}
+		else if(sootStmt instanceof ExitMonitorStmt)
+		{
+			if(!expSecondExitMonitor)
+			{
+				lockStack.remove(0);
+				expSecondExitMonitor = true;
+			} else
+			{
+				expSecondExitMonitor = false;
+			}
+		}
 	}
 }

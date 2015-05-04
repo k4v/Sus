@@ -3,6 +3,7 @@ package org.sus.framework.test;
 public class HelloThread
 {
 	static int x=1;
+	static final Object lock = new Object();
 	public static void main(String[] args)
 	{
 		new TestClass(x);
@@ -16,13 +17,16 @@ public class HelloThread
 				Runnable runnable = new TestRunnable();
 				Thread t1 = new Thread(runnable);
 				t1.start();
-				new Thread(runnable).start();
+				new Thread(new TestRunnable()).start();
 			}
 		}
 		
 		// Race condition here, may throw DivideByZeroException
-		int z = t.y+1/(x+1);
-		System.out.println(z);
+		synchronized(lock)
+		{
+			int z = t.y+1/(x+1);
+			System.out.println(z);
+		}
 	}
 	
 	static class TestThread extends Thread

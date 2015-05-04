@@ -3,60 +3,36 @@
 <plugin>
 
    <extension
-         point="org.eclipse.ui.commands">
+         point="org.eclipse.ui.views">
       <category
-            name="Sus"
-            id="SusPlugin.commands.category">
+            name="Program Analysis"
+            id="org.sus.framework.plugin.sdd">
       </category>
-      <command
-            name="Run Sus"
-            categoryId="SusPlugin.commands.category"
-            id="SusPlugin.commands.sampleCommand">
-      </command>
+      <view
+            name="Sus"
+            icon="icons/sample.gif"
+            category="org.sus.framework.plugin.sdd"
+            class="org.sus.framework.plugin.SDD"
+            id="org.sus.framework.plugin.sdd.views.SDD">
+      </view>
    </extension>
    <extension
-         point="org.eclipse.ui.handlers">
-      <handler
-            commandId="SusPlugin.commands.sampleCommand"
-            class="org.sus.framework.susplugin.handlers.SampleHandler">
-      </handler>
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <view
+               ratio="0.5"
+               relative="org.eclipse.ui.views.ProblemView"
+               relationship="right"
+               id="org.sus.framework.plugin.sdd.views.SDD">
+         </view>
+      </perspectiveExtension>
    </extension>
    <extension
-         point="org.eclipse.ui.bindings">
-      <key
-            commandId="SusPlugin.commands.sampleCommand"
-            contextId="org.eclipse.ui.contexts.window"
-            sequence="M1+6"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
-      </key>
-   </extension>
-   <extension
-         point="org.eclipse.ui.menus">
-      <menuContribution
-            locationURI="menu:org.eclipse.ui.main.menu?after=additions">
-         <menu
-               label="Sus"
-               mnemonic="M"
-               id="SusPlugin.menus.sampleMenu">
-            <command
-                  commandId="SusPlugin.commands.sampleCommand"
-                  mnemonic="S"
-                  id="SusPlugin.menus.sampleCommand">
-            </command>
-         </menu>
-      </menuContribution>
-      <menuContribution
-            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
-         <toolbar
-               id="SusPlugin.toolbars.sampleToolbar">
-            <command
-                  commandId="SusPlugin.commands.sampleCommand"
-                  icon="icons/sample.gif"
-                  tooltip="Say hello world"
-                  id="SusPlugin.toolbars.sampleCommand">
-            </command>
-         </toolbar>
-      </menuContribution>
+         point="org.eclipse.help.contexts">
+      <contexts
+            file="contexts.xml">
+      </contexts>
    </extension>
 
 </plugin>

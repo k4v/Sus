@@ -13,10 +13,8 @@ public class AnalysisLoader
 {
 	static LinkedList<String> excludeList;
 	
-	public static void main(String[] args)
+	public void main(String mainClass)
 	{
-		String mainClass = "org.sus.framework.test.HelloThread";
-
 		// Set Soot classpath
 	    String bootPath = System.getProperty("sun.boot.class.path");
 	    String javaPath = System.getProperty("java.class.path");
@@ -29,8 +27,9 @@ public class AnalysisLoader
 	    
 	    // Load and set main class
 	    Options.v().set_app(true);
-	    SootClass appclass = Scene.v().loadClassAndSupport(mainClass);
-	    Scene.v().setMainClass(appclass);
+	    Options.v().set_keep_line_number(true);
+	    SootClass appClass = Scene.v().loadClassAndSupport(mainClass);
+	    Scene.v().setMainClass(appClass);
 	    Scene.v().loadNecessaryClasses();
 
 	    // Start working
@@ -39,12 +38,13 @@ public class AnalysisLoader
 	    // Now we have all Thread/Runnable classes for which .start() is called.
 	    // Now we run call graph analysis on them
 	    Set<ThreadProperties> startedRunnables = susBodyAnalysis.startedRunnables;
-	    susCallGraphAnalysis.getIntersectingMethods(startedRunnables);
+	    susCallGraphAnalysis.addMainClassToRunnables(mainClass, startedRunnables);
+	    susCallGraphAnalysis.getReachableMethodsFromThreads(startedRunnables);
 	    
 	    // Now we have all methods reachable from known Runnable.run() methods.
 	    // Now do thread escape and alias analysis. These are inter-procedural. 
 	    AliasAnalysis susAliasAnalysis = AliasAnalysis.initAnalysis();
-	    susAliasAnalysis.getVariableAnalysis(startedRunnables);
+	    susAliasAnalysis.getVariableAnalysis(startedRunnables, susBodyAnalysis.variableAccesses);
 	    
 	    System.out.println("It's all over!");
 	}
